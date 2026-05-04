@@ -1,0 +1,8 @@
+import { useState } from 'react';
+import { supabase } from '../../lib/supabaseClient';
+const schools=['강원대','한림대','성심대'];
+export function RegisterPage(){const [f,setF]=useState({email:'',password:'',username:'',name:'',gender:'male',school:schools[0],contact_type:'kakao',contact_id:'',agree1:false,agree2:false}); const [file,setFile]=useState<File|null>(null);
+const submit=async()=>{if(!f.agree1||!f.agree2||!file)return alert('약관 동의/학생증 필요'); const {data,error}=await supabase.auth.signUp({email:f.email,password:f.password}); if(error||!data.user) return alert(error?.message);
+const path=`${data.user.id}/${Date.now()}-${file.name}`; await supabase.storage.from('student-ids').upload(path,file,{upsert:false});
+await supabase.from('profiles').insert({id:data.user.id,...f,student_id_image_path:path,verification_status:'pending'}); alert('가입 완료');};
+return <div className='p-4 space-y-2'><h1 className='text-xl font-bold'>회원가입</h1>{['email','password','username','name','contact_id'].map(k=><input key={k} type={k==='password'?'password':'text'} className='w-full border p-2' placeholder={k} value={(f as any)[k]} onChange={e=>setF({...f,[k]:e.target.value})}/>)}<select className='w-full border p-2' onChange={e=>setF({...f,school:e.target.value})}>{schools.map(s=><option key={s}>{s}</option>)}</select><input type='file' accept='image/*' onChange={e=>setFile(e.target.files?.[0]??null)} /><label><input type='checkbox' onChange={e=>setF({...f,agree1:e.target.checked})}/>개인정보 동의</label><label><input type='checkbox' onChange={e=>setF({...f,agree2:e.target.checked})}/>약관 동의</label><button className='w-full bg-pink-500 text-white p-2 rounded' onClick={submit}>가입하기</button></div>}
